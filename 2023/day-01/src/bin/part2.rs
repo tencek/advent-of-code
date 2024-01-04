@@ -11,6 +11,9 @@ fn main() {
 struct Calibration(u32);
 
 #[derive(Debug, PartialEq)]
+struct CalibrationSegment(u32);
+
+#[derive(Debug, PartialEq)]
 enum Token {
     NumberDigit(u32),
     NumberWord(u32),
@@ -57,32 +60,41 @@ impl Token {
 }
 
 fn parse_calibration(input: &str) -> Result<Calibration, String> {
-    let line_values: Result<Vec<u32>, String> = input
+    let line_values: Result<Vec<CalibrationSegment>, String> = input
         .lines()
         .into_iter()
-        .map(parse_tokens)
-        .map(|line_as_tokens| line_as_tokens.map(first_and_last))
+        .map(parse_calibration_segment)
         .collect();
 
-    line_values.map(|line_values| Calibration(line_values.iter().sum()))
+    line_values.map(|line_values| {
+        line_values
+            .iter()
+            .fold(Calibration(0), |sum_so_far, segment| {
+                Calibration(sum_so_far.0 + segment.0)
+            })
+    })
 }
 
-fn first_and_last(tokens: Vec<Token>) -> u32 {
-    match tokens.len() {
-        0 => 0,
-        _ => tokens[0].as_u32() * 10 + tokens[tokens.len() - 1].as_u32(),
-    }
+fn parse_calibration_segment(input: &str) -> Result<CalibrationSegment, String> {
+    parse_tokens(input).map(|(first, last)| CalibrationSegment(first.as_u32() * 10 + last.as_u32()))
 }
 
-fn parse_tokens(input: &str) -> Result<Vec<Token>, String> {
-    let re = Regex::new(r"([123456789]|one|two|three|four|five|six|seven|eight|nine)").unwrap();
+fn parse_tokens(input: &str) -> Result<(Token, Token), String> {
+    let first_token = Regex::new(r"([123456789]|one|two|three|four|five|six|seven|eight|nine)")
+        .unwrap()
+        .captures(input)
+        .and_then(|capture| capture.get(1))
+        .ok_or(String::from(format!("Invalid first capture in {}", input)))
+        .and_then(|amatch| amatch.as_str().parse::<Token>());
 
-    re.captures_iter(input)
-        .map(|capture| match capture.get(0) {
-            Some(capture) => capture.as_str().parse::<Token>(),
-            None => Err(format!("Invalid capture: {:?}", capture)),
-        })
-        .collect()
+    let last_token = Regex::new(r".*([123456789]|one|two|three|four|five|six|seven|eight|nine)")
+        .unwrap()
+        .captures(input)
+        .and_then(|capture| capture.get(1))
+        .ok_or(String::from(format!("Invalid last capture in {}", input)))
+        .and_then(|amatch| amatch.as_str().parse::<Token>());
+
+    Ok((first_token?, last_token?))
 }
 
 #[cfg(test)]
@@ -90,9 +102,23 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_parse_calibration_segment123() {
+        let input = "one2three";
+        let expected = CalibrationSegment(13);
+        assert_eq!(parse_calibration_segment(input), Ok(expected));
+    }
+
+    #[test]
+    fn test_parse_calibration_segment_eightwo() {
+        let input = "eightwo";
+        let expected = CalibrationSegment(82);
+        assert_eq!(parse_calibration_segment(input), Ok(expected));
+    }
+
+    #[test]
     fn test_parse_tokens() {
         let input = "9vxfg";
-        let expected = vec![Token::NumberDigit(9)];
+        let expected = (Token::NumberDigit(9), Token::NumberDigit(9));
         assert_eq!(parse_tokens(input), Ok(expected));
     }
 
