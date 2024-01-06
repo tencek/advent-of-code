@@ -186,20 +186,55 @@ impl GameRun {
     }
 }
 
-fn main() {
+fn part1(inputdata: &str) -> u32 {
     let game_config = GameConfig {
         red_cubes: 12,
         green_cubes: 13,
         blue_cubes: 14,
     };
-    let result = include_str!("input.txt")
+    inputdata
         .lines()
         .into_iter()
         .map(|s| s.parse::<GameRun>().unwrap())
         .filter(|game_run| game_config.is_valid_game_run(game_run))
         .map(|game_run| game_run.id)
-        .sum::<u32>();
-    println!("{}", result);
+        .sum::<u32>()
+}
+
+fn part2(inputdata: &str) -> u32 {
+    inputdata
+        .lines()
+        .into_iter()
+        .map(|s| s.parse::<GameRun>().unwrap())
+        .fold(0u32, |acc, game_run| {
+            let max_red = game_run
+                .draws
+                .iter()
+                .map(|draw| draw.red_cubes.unwrap_or(0))
+                .max()
+                .unwrap_or(0);
+            let max_green = game_run
+                .draws
+                .iter()
+                .map(|draw| draw.green_cubes.unwrap_or(0))
+                .max()
+                .unwrap_or(0);
+            let max_blue = game_run
+                .draws
+                .iter()
+                .map(|draw| draw.blue_cubes.unwrap_or(0))
+                .max()
+                .unwrap_or(0);
+            acc + max_red * max_green * max_blue
+        })
+}
+
+fn main() {
+    let result_part1 = part1(include_str!("input.txt"));
+    println!("part1: {}", result_part1);
+
+    let result_part2 = part2(include_str!("input.txt"));
+    println!("part2: {}", result_part2);
 }
 
 #[cfg(test)]
@@ -207,26 +242,27 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_filter_invalid_game_runs() {
+    fn test_part1() {
         let test_data = r"Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green
 Game 2: 1 blue, 2 green; 3 green, 4 blue, 1 red; 1 green, 1 blue
 Game 3: 8 green, 6 blue, 20 red; 5 blue, 4 red, 13 green; 5 green, 1 red
 Game 4: 1 green, 3 red, 6 blue; 3 green, 6 red; 3 green, 15 blue, 14 red
 Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green";
-        let game_config = GameConfig {
-            red_cubes: 12,
-            green_cubes: 13,
-            blue_cubes: 14,
-        };
-        let expected_game_id_sum = 1 + 2 + 5;
-        let game_id_sum = test_data
-            .lines()
-            .into_iter()
-            .map(|s| s.parse::<GameRun>().unwrap())
-            .filter(|game_run| game_config.is_valid_game_run(game_run))
-            .map(|game_run| game_run.id)
-            .sum::<u32>();
-        assert_eq!(game_id_sum, expected_game_id_sum);
+        let expected_part1_result = 1 + 2 + 5;
+        let part1_result = part1(test_data);
+        assert_eq!(part1_result, expected_part1_result);
+    }
+
+    #[test]
+    fn test_part2() {
+        let test_data = r"Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green
+Game 2: 1 blue, 2 green; 3 green, 4 blue, 1 red; 1 green, 1 blue
+Game 3: 8 green, 6 blue, 20 red; 5 blue, 4 red, 13 green; 5 green, 1 red
+Game 4: 1 green, 3 red, 6 blue; 3 green, 6 red; 3 green, 15 blue, 14 red
+Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green";
+        let expected_part2_result = 2286;
+        let part2_result = part2(test_data);
+        assert_eq!(part2_result, expected_part2_result);
     }
 
     #[test]
