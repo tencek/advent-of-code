@@ -101,6 +101,12 @@ fn main() {
         println!("{:?}", line);
         println!("{:?}", line.parse::<Line>().unwrap());
     });
+
+    let input_txt = include_str!("input.txt");
+    input_txt.lines().for_each(|line| {
+        println!("{:?}", line);
+        println!("{:?}", line.parse::<Line>().unwrap());
+    });
 }
 
 #[cfg(test)]
